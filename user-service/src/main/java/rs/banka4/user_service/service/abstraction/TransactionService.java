@@ -17,4 +17,5 @@ public interface TransactionService {
     TransactionDto createTransfer(Authentication authentication, CreateTransferDto createTransferDto);
     Page<TransactionDto> getAllTransactionsForClient(String token, TransactionStatus paymentStatus, BigDecimal amount, LocalDate paymentDate, String accountNumber, PageRequest pageRequest);
     TransactionDto getTransactionById(String token, UUID transactionId);
+    Page<TransactionDto> getAllTransfersForClient(String token, PageRequest pageRequest);
 }

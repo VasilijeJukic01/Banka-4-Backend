@@ -61,4 +61,12 @@ public class TransactionController implements TransactionApiDocumentation {
         TransactionDto transactionDto = transactionService.getTransactionById(auth.getCredentials().toString(), id);
         return ResponseEntity.ok(transactionDto);
     }
+
+    @Override
+    @GetMapping("/transfers")
+    public ResponseEntity<Page<TransactionDto>> getAllTransfers(Authentication auth) {
+        Page<TransactionDto> transactions = transactionService.getAllTransfersForClient(auth.getCredentials().toString(), null);
+        return ResponseEntity.ok(transactions);
+    }
+
 }

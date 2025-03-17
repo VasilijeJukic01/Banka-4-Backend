@@ -1,12 +1,16 @@
 package rs.banka4.user_service.repositories;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import rs.banka4.user_service.domain.transaction.db.Transaction;
+import rs.banka4.user_service.domain.user.client.db.Client;
 
 import java.util.Optional;
 import java.util.UUID;
 
 public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
     Optional<Transaction> findByTransactionNumber(String transactionNumber);
+    Page<Transaction> findAllByFromAccount_ClientAndIsTransferTrue(Client client, Pageable pageable);
 }

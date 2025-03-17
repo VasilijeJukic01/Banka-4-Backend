@@ -140,6 +140,18 @@ public class TransactionServiceImpl implements TransactionService {
         return TransactionMapper.INSTANCE.toDto(transaction);
     }
 
+    @Override
+    public Page<TransactionDto> getAllTransfersForClient(String token, PageRequest pageRequest) {
+        String email = jwtUtil.extractUsername(token);
+        Client client = clientRepository.findByEmail(email).orElseThrow(() -> new UserNotFound(email));
+
+        Page<Transaction> transactions = transactionRepository.findAllByFromAccount_ClientAndIsTransferTrue(client, pageRequest);
+
+        return transactions.map(TransactionMapper.INSTANCE::toDto);
+    }
+
+
+    // Private methods
     private Client getClient(Authentication authentication) {
         String email = jwtUtil.extractUsername(authentication.getCredentials().toString());
         return clientRepository.findByEmail(email).orElseThrow(() -> new UserNotFound(email));
