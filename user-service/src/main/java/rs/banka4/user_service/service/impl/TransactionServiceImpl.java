@@ -20,6 +20,8 @@ import rs.banka4.user_service.exceptions.account.AccountNotActive;
 import rs.banka4.user_service.exceptions.account.AccountNotFound;
 import rs.banka4.user_service.exceptions.account.NotAccountOwner;
 import rs.banka4.user_service.exceptions.authenticator.NotValidTotpException;
+import rs.banka4.user_service.exceptions.transaction.ExceededDailyLimit;
+import rs.banka4.user_service.exceptions.transaction.ExceededMonthlyLimit;
 import rs.banka4.user_service.exceptions.transaction.InsufficientFunds;
 import rs.banka4.user_service.exceptions.transaction.TransactionNotFound;
 import rs.banka4.user_service.exceptions.user.UserNotFound;
@@ -63,6 +65,7 @@ public class TransactionServiceImpl implements TransactionService {
         validateAccountActive(fromAccount);
         validateClientAccountOwnership(client, fromAccount);
         validateSufficientFunds(fromAccount, createPaymentDto.fromAmount().add(BigDecimal.ONE));
+        validateDailyAndMonthlyLimit(fromAccount, createPaymentDto.fromAmount());
 
         processTransaction(fromAccount, toAccount, createPaymentDto.fromAmount(), BigDecimal.ONE);
 
@@ -172,6 +175,22 @@ public class TransactionServiceImpl implements TransactionService {
     private void validateSufficientFunds(Account fromAccount, BigDecimal amount) {
         if (fromAccount.getBalance().subtract(amount).compareTo(BigDecimal.ZERO) < 0) {
             throw new InsufficientFunds();
+        }
+    }
+
+    private void validateDailyAndMonthlyLimit(Account fromAccount, BigDecimal amount) {
+        BigDecimal dailyLimit = fromAccount.getDailyLimit();
+        BigDecimal monthlyLimit = fromAccount.getMonthlyLimit();
+
+        BigDecimal totalDailyTransactions = transactionRepository.getTotalDailyTransactions(fromAccount.getId(), LocalDate.now());
+        BigDecimal totalMonthlyTransactions = transactionRepository.getTotalMonthlyTransactions(fromAccount.getId(), LocalDate.now().getMonthValue());
+
+        if (totalDailyTransactions.add(amount).compareTo(dailyLimit) > 0) {
+            throw new ExceededDailyLimit();
+        }
+
+        if (totalMonthlyTransactions.add(amount).compareTo(monthlyLimit) > 0) {
+            throw new ExceededMonthlyLimit();
         }
     }
 
