@@ -79,6 +79,9 @@ public class Transaction {
     @Column(nullable = false)
     private TransactionStatus status;
 
+    @Builder.Default
+    private boolean isTransfer = false;
+
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
