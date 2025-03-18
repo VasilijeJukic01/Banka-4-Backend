@@ -64,8 +64,12 @@ public class TransactionController implements TransactionApiDocumentation {
 
     @Override
     @GetMapping("/transfer-history")
-    public ResponseEntity<Page<TransactionDto>> getAllTransfers(Authentication auth) {
-        Page<TransactionDto> transactions = transactionService.getAllTransfersForClient(auth.getCredentials().toString(), null);
+    public ResponseEntity<Page<TransactionDto>> getAllTransfers(
+            Authentication auth,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<TransactionDto> transactions = transactionService.getAllTransfersForClient(auth.getCredentials().toString(), PageRequest.of(page, size));
         return ResponseEntity.ok(transactions);
     }
 

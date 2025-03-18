@@ -1,5 +1,6 @@
 package rs.banka4.user_service.utils.specification;
 
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import rs.banka4.user_service.domain.transaction.db.TransactionStatus;
 import rs.banka4.user_service.domain.account.db.Account;
@@ -37,5 +38,16 @@ public class PaymentSpecification {
     public static Specification<Transaction> hasToAccount(Account toAccount) {
         return (root, query, criteriaBuilder) ->
                 toAccount == null ? criteriaBuilder.conjunction() : criteriaBuilder.equal(root.get("toAccount"), toAccount);
+    }
+
+    public static Specification<Transaction> isNotSpecialTransaction() {
+        return (root, query, criteriaBuilder) -> {
+            String[] specialPrefixes = {"CONV-", "TRF-", "FEE-"};
+            Predicate[] predicates = new Predicate[specialPrefixes.length];
+            for (int i = 0; i < specialPrefixes.length; i++) {
+                predicates[i] = criteriaBuilder.notLike(root.get("referenceNumber"), specialPrefixes[i] + "%");
+            }
+            return criteriaBuilder.and(predicates);
+        };
     }
 }

@@ -109,6 +109,8 @@ public interface TransactionApiDocumentation {
             }
     )
     ResponseEntity<Page<TransactionDto>> getAllTransfers(
-            Authentication auth
+            Authentication auth,
+            @Parameter(description = "Page number") int page,
+            @Parameter(description = "Number of transfers per page") int size
     );
 }

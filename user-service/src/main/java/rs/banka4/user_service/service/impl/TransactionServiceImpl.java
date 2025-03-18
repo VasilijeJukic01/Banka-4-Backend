@@ -3,6 +3,7 @@ package rs.banka4.user_service.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -39,7 +40,9 @@ import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -91,9 +94,9 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionDto createTransfer(Authentication authentication, CreateTransferDto createTransferDto) {
         Client client = getClient(authentication);
 
-        if (!veifyClient(authentication, createTransferDto.otpCode())) {
-            throw new NotValidTotpException();
-        }
+//        if (!veifyClient(authentication, createTransferDto.otpCode())) {
+//            throw new NotValidTotpException();
+//        }
 
         Account fromAccount = getAccount(createTransferDto.fromAccount());
         Account toAccount = getAccount(createTransferDto.toAccount());
@@ -123,6 +126,8 @@ public class TransactionServiceImpl implements TransactionService {
             combinator.or(PaymentSpecification.hasToAccount(fromAccount));
         }
 
+        combinator.and(PaymentSpecification.isNotSpecialTransaction());
+
         Page<Transaction> transactions = transactionRepository.findAll(combinator.build(), pageRequest);
 
         return transactions.map(TransactionMapper.INSTANCE::toDto);
@@ -145,7 +150,14 @@ public class TransactionServiceImpl implements TransactionService {
 
         Page<Transaction> transactions = transactionRepository.findAllByFromAccount_ClientAndIsTransferTrue(client, pageRequest);
 
-        return transactions.map(TransactionMapper.INSTANCE::toDto);
+        List<Transaction> filteredTransactions = transactions.stream()
+                .filter(transaction -> !transaction.getReferenceNumber().startsWith("CONV-") &&
+                        !transaction.getReferenceNumber().startsWith("TRF-") &&
+                        !transaction.getReferenceNumber().startsWith("FEE-"))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(filteredTransactions, pageRequest, filteredTransactions.size())
+                .map(TransactionMapper.INSTANCE::toDto);
     }
 
 
@@ -244,6 +256,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
         else {
             Transaction transaction = buildTransfer(fromAccount, toAccount, (CreateTransferDto) createTransactionDto, fee, TransactionStatus.REALIZED);
+            transaction.setTransfer(true);
             transactionRepository.save(transaction);
             return transaction;
         }
@@ -279,8 +292,10 @@ public class TransactionServiceImpl implements TransactionService {
         // Convert whole amount to foreign currency using sell rate
         BigDecimal convertedAmount = exchangeRateService.convertCurrency(amount, fromAccount.getCurrency().getCode(), toAccount.getCurrency().getCode());
 
-        // Charge the fee from the user separately
+        // Charge the fee
         fromAccount.setBalance(fromAccount.getBalance().subtract(fee));
+        rsdBankAccount.setBalance(rsdBankAccount.getBalance().add(fee));
+        createFeeTransaction(fromAccount, rsdBankAccount, fee);
 
         // Decrease the bank account in foreign currency for the full amount that the user receives
         Account foreignBankAccount = bankAccountServiceImpl.getBankAccountForCurrency(toAccount.getCurrency().getCode());
@@ -291,7 +306,6 @@ public class TransactionServiceImpl implements TransactionService {
         createBankTransferTransaction(foreignBankAccount, toAccount, convertedAmount, "Transfer converted amount to Client");
 
         // Transaction for fee & conversion
-        createFeeTransaction(fromAccount, foreignBankAccount, fee);
         createConversionTransaction(rsdBankAccount, foreignBankAccount, convertedAmount);
 
         return fee;
@@ -333,11 +347,12 @@ public class TransactionServiceImpl implements TransactionService {
         toAccount.setBalance(toAccount.getBalance().add(convertedAmount));
         createBankTransferTransaction(rsdBankAccount, toAccount, convertedAmount, "Transfer converted amount to Client");
 
-        // Subtract the fee from the client's Foreign account
+        // Charge the fee
         fromAccount.setBalance(fromAccount.getBalance().subtract(fee));
-
-        // Transaction for fee & conversion
+        foreignBankAccount.setBalance(foreignBankAccount.getBalance().add(fee));
         createFeeTransaction(fromAccount, foreignBankAccount, fee);
+
+        // Transaction for conversion
         createConversionTransaction(foreignBankAccount, rsdBankAccount, convertedAmount);
 
         return fee;
