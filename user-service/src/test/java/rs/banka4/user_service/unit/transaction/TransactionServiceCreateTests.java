@@ -79,6 +79,8 @@ public class TransactionServiceCreateTests {
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount())).thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(Optional.of(toAccount));
         when(transactionMapper.toDto(any())).thenReturn(transactionDto);
+        when(transactionRepository.getTotalDailyTransactions(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(transactionRepository.getTotalMonthlyTransactions(any(), anyInt())).thenReturn(BigDecimal.ZERO);
 
         // Act
         TransactionDto result = transactionService.createTransaction(authentication, createPaymentDto);
