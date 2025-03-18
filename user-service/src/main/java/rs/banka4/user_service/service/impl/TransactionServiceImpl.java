@@ -62,7 +62,7 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionDto createTransaction(Authentication authentication, CreatePaymentDto createPaymentDto) {
         Client client = getClient(authentication);
 
-        if (!veifyClient(authentication, createPaymentDto.otpCode())) {
+        if (!verifyClient(authentication, createPaymentDto.otpCode())) {
             throw new NotValidTotpException();
         }
 
@@ -94,9 +94,9 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionDto createTransfer(Authentication authentication, CreateTransferDto createTransferDto) {
         Client client = getClient(authentication);
 
-//        if (!veifyClient(authentication, createTransferDto.otpCode())) {
-//            throw new NotValidTotpException();
-//        }
+        if (!verifyClient(authentication, createTransferDto.otpCode())) {
+            throw new NotValidTotpException();
+        }
 
         Account fromAccount = getAccount(createTransferDto.fromAccount());
         Account toAccount = getAccount(createTransferDto.toAccount());
@@ -201,7 +201,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-    private boolean veifyClient(Authentication authentication, String otpCode) {
+    private boolean verifyClient(Authentication authentication, String otpCode) {
         return totpService.validate(authentication.getCredentials().toString(), otpCode);
     }
 
@@ -249,17 +249,16 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
+        Transaction transaction;
         if (createTransactionDto instanceof CreatePaymentDto) {
-            Transaction transaction = buildTransaction(fromAccount, toAccount, (CreatePaymentDto) createTransactionDto, fee, TransactionStatus.REALIZED);
-            transactionRepository.save(transaction);
-            return transaction;
+            transaction = buildTransaction(fromAccount, toAccount, (CreatePaymentDto) createTransactionDto, fee, TransactionStatus.REALIZED);
         }
         else {
-            Transaction transaction = buildTransfer(fromAccount, toAccount, (CreateTransferDto) createTransactionDto, fee, TransactionStatus.REALIZED);
+            transaction = buildTransfer(fromAccount, toAccount, (CreateTransferDto) createTransactionDto, fee, TransactionStatus.REALIZED);
             transaction.setTransfer(true);
-            transactionRepository.save(transaction);
-            return transaction;
         }
+        transactionRepository.save(transaction);
+        return transaction;
     }
 
     /**
