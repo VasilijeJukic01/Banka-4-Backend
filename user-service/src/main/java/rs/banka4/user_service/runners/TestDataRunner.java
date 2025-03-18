@@ -56,7 +56,6 @@ public class TestDataRunner implements CommandLineRunner {
     private final InterestRateRepository interestRateRepository;
     private final CardRepository cardRepository;
 
-
     @Override
     public void run(String... args) {
         clientSeeder();
@@ -72,6 +71,7 @@ public class TestDataRunner implements CommandLineRunner {
         transactionSeeder();
         seedBankMargins();
         cardSeeder();
+        bankSeeder();
     }
 
     private void cardSeeder() {
@@ -1095,10 +1095,6 @@ public class TestDataRunner implements CommandLineRunner {
         }
     }
 
-
-
-
-
     private InterestRate createInterestRate(long minAmount, Long maxAmount, double fixedRate) {
         return InterestRate.builder()
                 .minAmount(BigDecimal.valueOf(minAmount))
@@ -1109,4 +1105,60 @@ public class TestDataRunner implements CommandLineRunner {
                 .build();
     }
 
+    private void bankSeeder() {
+        if (companyRepository.findByName("Bank 4").isEmpty()) {
+            ActivityCode activityCode = activityCodeRepository.findActivityCodeByCode("64.19").orElse(null);
+            Client client = clientRepository.findByEmail("danielm@example.com").orElse(null);
+
+            if (activityCode != null) {
+                Company ourBank = Company.builder()
+                        .name("Bank 4")
+                        .tin("133456789")
+                        .crn("988654321")
+                        .address("123 Bank St")
+                        .activityCode(activityCode)
+                        .majorityOwner(client)
+                        .build();
+
+                companyRepository.save(ourBank);
+
+                List<String> bankAccountNumbers = List.of(
+                        "4440001000000000010",
+                        "4440001000000000020",
+                        "4440001000000000120",
+                        "4440001000000000220",
+                        "4440001000000000320",
+                        "4440001000000000420",
+                        "4440001000000000520"
+                );
+
+                List<Currency> currencies = currencyRepository.findAll();
+                List<Account> accounts = new ArrayList<>();
+
+                for (int i = 0; i < bankAccountNumbers.size(); i++) {
+                    String accountNumber = bankAccountNumbers.get(i);
+                    Currency currency = currencies.get(i);
+
+                    Account account = Account.builder()
+                            .accountNumber(accountNumber)
+                            .balance(BigDecimal.valueOf(1000000))
+                            .availableBalance(BigDecimal.valueOf(1000000))
+                            .accountMaintenance(BigDecimal.valueOf(100))
+                            .createdDate(LocalDate.now())
+                            .expirationDate(LocalDate.now().plusYears(5))
+                            .active(true)
+                            .accountType(AccountType.DOO)
+                            .dailyLimit(BigDecimal.valueOf(100000))
+                            .monthlyLimit(BigDecimal.valueOf(1000000))
+                            .company(ourBank)
+                            .currency(currency)
+                            .build();
+
+                    accounts.add(account);
+                }
+
+                accountRepository.saveAll(accounts);
+            }
+        }
+    }
 }
