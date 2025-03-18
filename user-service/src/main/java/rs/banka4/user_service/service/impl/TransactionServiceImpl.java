@@ -215,7 +215,7 @@ public class TransactionServiceImpl implements TransactionService {
      * @return the processed transaction
      */
     @Transactional
-    protected Transaction processTransaction(Account fromAccount, Account toAccount, BigDecimal amount, CreateTransactionDto createTransactionDto) {
+    public Transaction processTransaction(Account fromAccount, Account toAccount, BigDecimal amount, CreateTransactionDto createTransactionDto) {
         BigDecimal fee = BigDecimal.ZERO;
         // Same -> Same
         if (fromAccount.getCurrency().getCode().equals(toAccount.getCurrency().getCode())) {
