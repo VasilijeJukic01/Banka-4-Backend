@@ -5,6 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import rs.banka4.user_service.domain.company.db.Company;
 import rs.banka4.user_service.domain.transaction.db.Transaction;
 import rs.banka4.user_service.domain.user.client.db.Client;
 
@@ -23,4 +25,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
 
     @Query("SELECT COALESCE(SUM(t.from.amount), 0) FROM Transaction t WHERE t.fromAccount.id = :accountId AND MONTH(t.paymentDateTime) = :month")
     BigDecimal getTotalMonthlyTransactions(UUID accountId, int month);
+
+    @Query("SELECT t FROM Transaction t WHERE t.fromAccount.company = :company OR t.toAccount.company = :company")
+    Page<Transaction> findAllByCompany(@Param("company") Company company, Pageable pageable);
 }

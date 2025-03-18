@@ -41,7 +41,7 @@ public class Currency {
     private Code code;
 
     public enum Code {
-        RSD, EUR, USD, CHF, JPY, AUD, CAD;
+        RSD, EUR, USD, CHF, JPY, AUD, CAD, GBP;
         @JsonCreator
         public static Code fromString(String raw) {
             try {

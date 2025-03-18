@@ -63,7 +63,7 @@ public class TransactionController implements TransactionApiDocumentation {
     }
 
     @Override
-    @GetMapping("/transfers")
+    @GetMapping("/transfer-history")
     public ResponseEntity<Page<TransactionDto>> getAllTransfers(Authentication auth) {
         Page<TransactionDto> transactions = transactionService.getAllTransfersForClient(auth.getCredentials().toString(), null);
         return ResponseEntity.ok(transactions);
